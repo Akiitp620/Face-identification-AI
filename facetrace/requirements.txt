@@ -1,0 +1,12 @@
+streamlit==1.42.0
+python-dotenv==1.0.1
+torch==2.8.0
+torchvision==0.23.0
+facenet-pytorch==2.5.3
+opencv-python-headless
+tqdm
+requests
+graphviz
+aiohttp
+nest_asyncio
+web3

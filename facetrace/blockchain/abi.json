@@ -1,0 +1,69 @@
+[
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "bytes32",
+                "name": "fingerprint",
+                "type": "bytes32"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "timestamp",
+                "type": "uint256"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "registrar",
+                "type": "address"
+            }
+        ],
+        "name": "EvidenceRegistered",
+        "type": "event"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "bytes32",
+                "name": "_fingerprint",
+                "type": "bytes32"
+            }
+        ],
+        "name": "registerEvidence",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "bytes32",
+                "name": "_fingerprint",
+                "type": "bytes32"
+            }
+        ],
+        "name": "verifyEvidence",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "exists",
+                "type": "bool"
+            },
+            {
+                "internalType": "uint256",
+                "name": "timestamp",
+                "type": "uint256"
+            },
+            {
+                "internalType": "address",
+                "name": "registrar",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    }
+]
