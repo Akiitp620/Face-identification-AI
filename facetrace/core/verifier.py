@@ -33,7 +33,7 @@ class EvidenceVerifier:
                 computed_fingerprint=computed_fingerprint,
                 blockchain_timestamp=record.get("timestamp"),
                 blockchain_registrar=record.get("registrar"),
-                message="VERIFIED: Evidence is authentic and untampered."
+               message="VERIFIED: Evidence fingerprint matches the on-chain record."
             )
         else:
             return VerificationResult(
