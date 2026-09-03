@@ -38,6 +38,7 @@ def test_rank_candidates(mock_image_open, mock_get, dummy_face_engine, dummy_can
     mock_resp = AsyncMock()
     mock_resp.read.return_value = b"fake_bytes"
     mock_resp.headers = {'Content-Length': '100', 'Content-Type': 'image/jpeg'}
+    mock_resp.raise_for_status = MagicMock()
     
     mock_ctx = AsyncMock()
     mock_ctx.__aenter__.return_value = mock_resp
@@ -78,6 +79,7 @@ def test_rank_candidates_skips_errors(mock_get, dummy_face_engine, dummy_candida
         mock_resp = AsyncMock()
         mock_resp.read.return_value = b"fake_bytes"
         mock_resp.headers = {'Content-Length': '100', 'Content-Type': 'image/jpeg'}
+        mock_resp.raise_for_status = MagicMock()
         mock_ctx = AsyncMock()
         mock_ctx.__aenter__.return_value = mock_resp
         return mock_ctx
