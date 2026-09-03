@@ -1,6 +1,3 @@
-"""
-Responsible ONLY for genuine web/social discovery.
-"""
 import requests
 import logging
 from typing import List
@@ -9,11 +6,15 @@ from utils.config import Config
 
 logger = logging.getLogger(__name__)
 
+MAX_IMAGE_SIZE_BYTES = 500 * 1024
+
+
 @dataclass
 class CandidateResult:
     source_url: str
     image_url: str
     metadata: dict
+
 
 class DiscoveryEngine:
     def __init__(self):
@@ -22,71 +23,79 @@ class DiscoveryEngine:
             logger.warning("SERPAPI_API_KEY is not set. Discovery will fail.")
 
     def search(self, image_bytes: bytes) -> List[CandidateResult]:
-        """
-        Genuine reverse image search using SerpApi Google Lens.
-        """
+        """Genuine reverse image search using SerpApi Google Lens."""
+
         if not self.api_key:
-            raise ValueError("SERPAPI_API_KEY is missing. Cannot perform genuine discovery.")
+            raise ValueError(
+                "SERPAPI_API_KEY is missing. Cannot perform genuine discovery."
+            )
+
+        if not image_bytes:
+            raise ValueError("Image is empty. Please provide a valid image.")
+
+        if len(image_bytes) > MAX_IMAGE_SIZE_BYTES:
+            raise ValueError(
+                f"Image exceeds the 500 KB web-discovery limit. "
+                f"Selected image: {len(image_bytes) / 1024:.1f} KB."
+            )
 
         # Step 1: Upload image to SerpApi
-        upload_url = "https://serpapi.com/image"
-        upload_params = {'api_key': self.api_key}
-        # The file tuple must include a filename, otherwise it might be rejected by the endpoint.
-        files = {'image': ('image.jpg', image_bytes, 'image/jpeg')}
-
         try:
-            upload_response = requests.post(upload_url, params=upload_params, files=files, timeout=30)
-            upload_response.raise_for_status()
-            upload_data = upload_response.json()
-            image_id = upload_data.get('image_id')
+            response = requests.post(
+                "https://serpapi.com/image",
+                params={"api_key": self.api_key},
+                files={"image": ("image.jpg", image_bytes, "image/jpeg")},
+                timeout=30,
+            )
+            response.raise_for_status()
+            image_id = response.json().get("image_id")
+
             if not image_id:
-                raise ValueError("Failed to retrieve image_id from SerpApi upload response.")
+                raise ValueError("SerpApi did not return an image_id.")
+
         except requests.exceptions.RequestException as e:
-            logger.error(f"Discovery upload failed: {e}")
-            raise ConnectionError(f"Failed to upload image to discovery provider: {e}")
+            logger.error("Discovery upload failed: %s", e)
+            raise ConnectionError(f"Failed to upload image: {e}") from e
 
-        # Step 2: Search using image_id with Google Lens
-        search_url = "https://serpapi.com/search"
-        search_params = {
-            "engine": "google_lens",
-            "image_id": image_id,
-            "api_key": self.api_key
-        }
-
+        # Step 2: Search using Google Lens
         try:
-            search_response = requests.get(search_url, params=search_params, timeout=30)
-            search_response.raise_for_status()
-            data = search_response.json()
-
-            candidates = []
-            
-            # Helper to parse matches
-            def parse_matches(matches):
-                for match in matches:
-                    source_url = match.get('link', '')
-                    image_url = match.get('thumbnail', '')
-                    
-                    if not source_url or not image_url:
-                        continue
-                        
-                    candidates.append(CandidateResult(
-                        source_url=source_url,
-                        image_url=image_url,
-                        metadata={
-                            'name': match.get('title', ''),
-                            'date': match.get('date', ''),
-                            'source': match.get('source', '')
-                        }
-                    ))
-
-            # Prioritize exact matches, then add visual matches
-            parse_matches(data.get('exact_matches', []))
-            parse_matches(data.get('visual_matches', []))
-
-            return candidates
+            response = requests.get(
+                "https://serpapi.com/search",
+                params={
+                    "engine": "google_lens",
+                    "image_id": image_id,
+                    "api_key": self.api_key,
+                },
+                timeout=30,
+            )
+            response.raise_for_status()
+            data = response.json()
 
         except requests.exceptions.RequestException as e:
-            logger.error(f"Discovery search failed: {e}")
-            raise ConnectionError(f"Failed to communicate with discovery provider: {e}")
+            logger.error("Discovery search failed: %s", e)
+            raise ConnectionError(
+                f"Failed to communicate with discovery provider: {e}"
+            ) from e
 
+        candidates = []
 
+        for match in data.get("exact_matches", []) + data.get("visual_matches", []):
+            source_url = match.get("link", "")
+            image_url = match.get("thumbnail", "")
+
+            if not source_url or not image_url:
+                continue
+
+            candidates.append(
+                CandidateResult(
+                    source_url=source_url,
+                    image_url=image_url,
+                    metadata={
+                        "name": match.get("title", ""),
+                        "date": match.get("date", ""),
+                        "source": match.get("source", ""),
+                    },
+                )
+            )
+
+        return candidates

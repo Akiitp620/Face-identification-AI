@@ -14,6 +14,12 @@ def test_discovery_no_key():
         with pytest.raises(ValueError, match="SERPAPI_API_KEY is missing"):
             engine.search(b"dummy_bytes")
 
+def test_discovery_oversized_image(mock_config):
+    engine = DiscoveryEngine()
+    large_bytes = b"0" * (500 * 1024 + 1)
+    with pytest.raises(ValueError, match="Image exceeds the 500 KB web-discovery limit."):
+        engine.search(large_bytes)
+
 @patch('core.discovery.requests.get')
 @patch('core.discovery.requests.post')
 def test_discovery_success(mock_post, mock_get, mock_config):
